@@ -15,7 +15,10 @@
  */
 package com.example.android.asynctaskloader;
 
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -54,6 +57,8 @@ public class MainActivity extends AppCompatActivity implements
 
     private ProgressBar mLoadingIndicator;
 
+    private MainViewModel mViewModel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,10 +79,29 @@ public class MainActivity extends AppCompatActivity implements
             mUrlDisplayTextView.setText(queryUrl);
         }
 
+        // Get viewModel
+        mViewModel
+                = ViewModelProviders.of(this).get(MainViewModel.class);
+
+        showJsonDataView();
         /*
          * Initialize the loader
          */
-        getSupportLoaderManager().initLoader(GITHUB_SEARCH_LOADER, null, this);
+        // getSupportLoaderManager().initLoader(GITHUB_SEARCH_LOADER, null, this);
+    }
+
+    private void makeGithubSearchQuery() {
+        String githubQuery = mSearchBoxEditText.getText().toString();
+        mViewModel.makeGithubSearchQuery(githubQuery);
+
+        Observer<String> observer = new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                mSearchResultsTextView.setText(s);
+            }
+        };
+
+        mViewModel.getSearchResults().observe(this, observer);
     }
 
     /**
@@ -85,53 +109,54 @@ public class MainActivity extends AppCompatActivity implements
      * URL (using {@link NetworkUtils}) for the github repository you'd like to find, displays
      * that URL in a TextView, and finally request that an AsyncTaskLoader performs the GET request.
      */
-    private void makeGithubSearchQuery() {
-        String githubQuery = mSearchBoxEditText.getText().toString();
-
-        /*
-         * If the user didn't enter anything, there's nothing to search for. In the case where no
-         * search text was entered but the search button was clicked, we will display a message
-         * stating that there is nothing to search for and we will not attempt to load anything.
-         *
-         * If there is text entered in the search box when the search button was clicked, we will
-         * create the URL that will return our Github search results, display that URL, and then
-         * pass that URL to the Loader. The reason we pass the URL as a String is simply a matter
-         * of convenience. There are other ways of achieving this same result, but we felt this
-         * was the simplest.
-         */
-        if (TextUtils.isEmpty(githubQuery)) {
-            mUrlDisplayTextView.setText("No query entered, nothing to search for.");
-            return;
-        }
-
-        URL githubSearchUrl = NetworkUtils.buildUrl(githubQuery);
-        mUrlDisplayTextView.setText(githubSearchUrl.toString());
-
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(SEARCH_QUERY_URL_EXTRA, githubSearchUrl.toString());
-
-        /*
-         * Now that we've created our bundle that we will pass to our Loader, we need to decide
-         * if we should restart the loader (if the loader already existed) or if we need to
-         * initialize the loader (if the loader did NOT already exist).
-         *
-         * We do this by first store the support loader manager in the variable loaderManager.
-         * All things related to the Loader go through through the LoaderManager. Once we have a
-         * hold on the support loader manager, (loaderManager) we can attempt to access our
-         * githubSearchLoader. To do this, we use LoaderManager's method, "getLoader", and pass in
-         * the ID we assigned in its creation. You can think of this process similar to finding a
-         * View by ID. We give the LoaderManager an ID and it returns a loader (if one exists). If
-         * one doesn't exist, we tell the LoaderManager to create one. If one does exist, we tell
-         * the LoaderManager to restart it.
-         */
-        LoaderManager loaderManager = getSupportLoaderManager();
-        Loader<String> githubSearchLoader = loaderManager.getLoader(GITHUB_SEARCH_LOADER);
-        if (githubSearchLoader == null) {
-            loaderManager.initLoader(GITHUB_SEARCH_LOADER, queryBundle, this);
-        } else {
-            loaderManager.restartLoader(GITHUB_SEARCH_LOADER, queryBundle, this);
-        }
-    }
+//    private void makeGithubSearchQuery() {
+//        String githubQuery = mSearchBoxEditText.getText().toString();
+//
+//        /*
+//         * If the user didn't enter anything, there's nothing to search for. In the case where no
+//         * search text was entered but the search button was clicked, we will display a message
+//         * stating that there is nothing to search for and we will not attempt to load anything.
+//         *
+//         * If there is text entered in the search box when the search button was clicked, we will
+//         * create the URL that will return our Github search results, display that URL, and then
+//         * pass that URL to the Loader. The reason we pass the URL as a String is simply a matter
+//         * of convenience. There are other ways of achieving this same result, but we felt this
+//         * was the simplest.
+//         */
+//        if (TextUtils.isEmpty(githubQuery)) {
+//            mUrlDisplayTextView.setText("No query entered, nothing to search for.");
+//            return;
+//        }
+//        ///
+//
+//        URL githubSearchUrl = NetworkUtils.buildUrl(githubQuery);
+//        mUrlDisplayTextView.setText(githubSearchUrl.toString());
+//
+//        Bundle queryBundle = new Bundle();
+//        queryBundle.putString(SEARCH_QUERY_URL_EXTRA, githubSearchUrl.toString());
+//
+//        /*
+//         * Now that we've created our bundle that we will pass to our Loader, we need to decide
+//         * if we should restart the loader (if the loader already existed) or if we need to
+//         * initialize the loader (if the loader did NOT already exist).
+//         *
+//         * We do this by first store the support loader manager in the variable loaderManager.
+//         * All things related to the Loader go through through the LoaderManager. Once we have a
+//         * hold on the support loader manager, (loaderManager) we can attempt to access our
+//         * githubSearchLoader. To do this, we use LoaderManager's method, "getLoader", and pass in
+//         * the ID we assigned in its creation. You can think of this process similar to finding a
+//         * View by ID. We give the LoaderManager an ID and it returns a loader (if one exists). If
+//         * one doesn't exist, we tell the LoaderManager to create one. If one does exist, we tell
+//         * the LoaderManager to restart it.
+//         */
+//        LoaderManager loaderManager = getSupportLoaderManager();
+//        Loader<String> githubSearchLoader = loaderManager.getLoader(GITHUB_SEARCH_LOADER);
+//        if (githubSearchLoader == null) {
+//            loaderManager.initLoader(GITHUB_SEARCH_LOADER, queryBundle, this);
+//        } else {
+//            loaderManager.restartLoader(GITHUB_SEARCH_LOADER, queryBundle, this);
+//        }
+//    }
 
     /**
      * This method will make the View for the JSON data visible and
