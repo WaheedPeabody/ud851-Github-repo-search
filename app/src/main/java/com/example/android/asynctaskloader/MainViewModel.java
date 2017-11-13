@@ -17,13 +17,29 @@ import java.net.URL;
 public class MainViewModel extends ViewModel {
 
     private String searchQuery;
-    private String queryUrl;
+    private MutableLiveData<String> queryUrl = new MutableLiveData<>();
     private MutableLiveData<String> searchResults = new MutableLiveData<>();
+    private MutableLiveData<Boolean> loading = new MutableLiveData<>();
+
+    public MainViewModel() {
+        super();
+        loading.setValue(false);
+    }
 
     public void makeGithubSearchQuery(final String searchQuery) {
+        loading.setValue(true);
+
+        // if the same search query as before
+        // and there exist search results for that query then do nothing
+        if (searchQuery.equals(this.searchQuery)
+                && (searchResults.getValue() != null)) {
+            loading.setValue(false);
+            return;
+        }
 
         this.searchQuery = searchQuery;
-        this.queryUrl = NetworkUtils.buildUrl(searchQuery).toString();
+        String queryUrlStr = NetworkUtils.buildUrl(searchQuery).toString();
+        this.queryUrl.setValue(queryUrlStr);
 
         AsyncTask<String, Void, String> asyncTask
                 = new AsyncTask<String, Void, String>() {
@@ -31,9 +47,7 @@ public class MainViewModel extends ViewModel {
             protected String doInBackground(String... strings) {
                 try {
                     URL url = NetworkUtils.buildUrl(searchQuery);
-                    String responseFromHttpUrl
-                            = NetworkUtils.getResponseFromHttpUrl(url);
-                    return responseFromHttpUrl;
+                    return NetworkUtils.getResponseFromHttpUrl(url);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -41,30 +55,23 @@ public class MainViewModel extends ViewModel {
             }
 
             @Override
-            protected void onPostExecute(String s) {
-                searchResults.setValue(s);
+            protected void onPostExecute(String result) {
+                searchResults.setValue(result);
+                loading.setValue(false);
             }
         };
         asyncTask.execute();
     }
 
-    public String getSearchQuery() {
-        return searchQuery;
+    public LiveData<String> getSearchResults() {
+        return searchResults;
     }
 
-    public void setSearchQuery(String searchQuery) {
-        this.searchQuery = searchQuery;
-    }
-
-    public String getQueryUrl() {
+    public LiveData<String> getQueryUrl() {
         return queryUrl;
     }
 
-    public void setQueryUrl(String queryUrl) {
-        this.queryUrl = queryUrl;
-    }
-
-    public LiveData<String> getSearchResults() {
-        return searchResults;
+    public LiveData<Boolean> getLoading() {
+        return loading;
     }
 }
