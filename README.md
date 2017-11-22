@@ -3,4 +3,5 @@ It takes an app from the udacity's developing android apps course that is using 
 LiveData and ViewModel instead.
 
 The original impelementation using loaders https://github.com/WaheedPeabody/udacity-course/tree/master
+
 Refactor to use LiveData and ViewModel instead of loaders https://github.com/WaheedPeabody/udacity-course/tree/architecture_components
